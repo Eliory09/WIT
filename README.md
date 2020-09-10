@@ -3,15 +3,15 @@
 WIT is a basic version control system (VCS) for local use.
 Made as a project for [Python Free Course](https://github.com/PythonFreeCourse/Notebooks).
 
-### Installation (NOT FUNCITONAL YET)
+### Installation
 
 WIT requires [Python](https://graphviz.readthedocs.io/en/stable/) and [Graphviz](https://graphviz.readthedocs.io/en/stable/) to fully operate.
 
-To install the library simply clone it and run pip.
+To install the library simply clone it to a separate directory of your choice and run it from CMD/terminal.
 
 ```sh
 $ git clone https://github.com/Eliory09/WIT
-$ pip3 install -U
+$ python3 <path/to/wit.py> <command> <args>
 ```
 
 ### Commands

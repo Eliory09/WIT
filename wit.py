@@ -4,10 +4,9 @@ from shutil import copy2, rmtree
 import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from constants import COMMANDS, DIR_NAMES, ERROR_MESSAGES
 from graphviz import Digraph  # type: ignore
-from utilities import (are_dir_trees_equal, create_image_dir, create_meta_data,
-                       execute_checkout, get_activated_branch, get_all_commits,
+from utilities import (are_dir_trees_equal, COMMANDS, create_image_dir, create_meta_data,
+                       DIR_NAMES, ERROR_MESSAGES, execute_checkout, get_activated_branch, get_all_commits,
                        get_branches, get_dirs_diffs, get_head_commit_id, get_parents, print_status,
                        split_path, split_text_for_node, update_references, write_to_log)
 
