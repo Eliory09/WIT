@@ -10,7 +10,7 @@ WIT requires [Python](https://graphviz.readthedocs.io/en/stable/) and [Graphviz]
 To install the library simply clone it and run pip.
 
 ```sh
-$ git clone https://github.com/Eliory09/WIT.git
+$ git clone https://github.com/Eliory09/WIT
 $ pip3 install -U
 ```
 
