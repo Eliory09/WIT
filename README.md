@@ -14,7 +14,9 @@ $ git clone https://github.com/Eliory09/WIT.git
 $ pip3 install -U
 ```
 
-### Contributers
+### Contributors
 Thanks to Yam Mesika for guiding me through the coding process.
+
+
 
 **SUPPORT FREE SOFTWARE**
