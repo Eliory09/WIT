@@ -309,3 +309,51 @@ def get_parents(images_dir: str, commit_id: str) -> List[str]:
     if parents[0] == 'None':
         return []
     return parents
+
+
+def merge_common_changes(common_file: str, branch_file: str, head_file: str, dst: str) -> None:
+    """Merge common files that were edited by 2 users.
+    Args:
+        common_file (str): The common branch file (the original).
+        branch_file (str): The same file edited in the branch passed to \'merge\' command.
+        head_file (str): The same file edited in the head branch.
+        dst (str): The destination path.
+    Returns:
+        None.
+    """
+    with open(common_file, "r") as file:
+        common_content: List[str] = file.read().splitlines()
+    with open(branch_file, "r") as file:
+        branch_content: List[str] = file.read().splitlines()
+    with open(head_file, "r") as file:
+        head_content: List[str] = file.read().splitlines()
+    
+    merged_content: List[str] = []
+    i: int = 0
+    branch_len: int = len(branch_content)
+    head_len: int = len(head_content)
+    while i < branch_len or i < head_len:
+        try:
+            branch_line: str = branch_content[i]
+        except IndexError:
+            head_line: str = head_content[i]
+            merged_content.append(head_line)
+        else:
+            try:
+                head_line = head_content[i]
+            except IndexError:
+                merged_content.append(branch_line)
+            else:
+                common_line: str = common_content[i]
+                if common_line != head_line and common_line != branch_line:
+                    raise ValueError("Same row changed on both files. Aborting proccess.")
+                elif common_line == head_line and common_line != branch_line:
+                    merged_content.append(branch_line)
+                else:
+                    merged_content.append(head_line)
+        i += 1
+
+    with open(dst, "w") as file:
+        file.write("\n".join(merged_content))
+
+    

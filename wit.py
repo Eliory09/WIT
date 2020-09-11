@@ -2,12 +2,12 @@ from distutils.dir_util import copy_tree
 import os
 from shutil import copy2, rmtree
 import sys
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from graphviz import Digraph  # type: ignore
 from utilities import (are_dir_trees_equal, COMMANDS, create_image_dir, create_meta_data,
                        DIR_NAMES, ERROR_MESSAGES, execute_checkout, get_activated_branch, get_all_commits,
-                       get_branches, get_dirs_diffs, get_head_commit_id, get_parents, print_status,
+                       get_branches, get_dirs_diffs, get_head_commit_id, get_parents, merge_common_changes, print_status,
                        split_path, split_text_for_node, update_references, write_to_log)
 
 
@@ -389,44 +389,82 @@ def merge(param: str) -> None:
     if not os.path.isfile(references_path):
         print("Can not complete the proccess. No commit found.")
     
-    branches = get_branches(references_path)
+    branches: Dict[str, str] = get_branches(references_path)
     if param in branches:
-        src_commit_id = branches[param]
+        branch_commit_id: str = branches[param]
     else:
-        src_commit_id = param
+        branch_commit_id = param
     try:
-        src_commits: List[str] = get_all_commits(images_dir, commit_id=src_commit_id)
+        branch_commits: List[str] = get_all_commits(images_dir, commit_id=branch_commit_id)
         head_commits: List[str] = get_all_commits(images_dir)
     except OSError as e:
         print("Wrong commit_id or branch name entered.")
         write_to_log(e)
         print(e)
         return
-    common_commit = None
-    for commit_id in src_commits:
+    head_commit_id: str = head_commits[0]
+    branch_image_dir: str = os.path.join(home_dir, DIR_NAMES["WIT"], DIR_NAMES["IMAGES"], branch_commit_id)
+    head_image_dir: str = os.path.join(home_dir, DIR_NAMES["WIT"], DIR_NAMES["IMAGES"], head_commit_id)
+
+    common_commit: str = ""
+    for commit_id in branch_commits:
         if commit_id in head_commits:
             common_commit = commit_id
-    if common_commit is None:
-        print("No common basis between the HEAD commit and the branch was found. Aborting.")
+    if common_commit == "":
+        mes = "No common basis between the HEAD commit and the branch was found. Aborting."
+        print(mes)
+        write_to_log(ValueError(mes))
         return
-    files_changed: List[str] = []
+
+    files_changed_branch: List[str] = []
+    files_changed_head: List[str] = []
     get_dirs_diffs(os.path.join(images_dir, common_commit),
-                   os.path.join(images_dir, src_commit_id),
-                   files_changed)
+                   os.path.join(images_dir, branch_commit_id),
+                   files_changed_branch)
     get_dirs_diffs(os.path.join(images_dir, common_commit),
-                   os.path.join(images_dir, src_commit_id),
-                   files_changed, by_content=True)
-    src_image_dir = os.path.join(home_dir, DIR_NAMES["WIT"], DIR_NAMES["IMAGES"], src_commit_id)
+                   os.path.join(images_dir, branch_commit_id),
+                   files_changed_branch, by_content=True)
+    get_dirs_diffs(os.path.join(images_dir, common_commit),
+                   os.path.join(images_dir, head_commit_id),
+                   files_changed_head)
+    get_dirs_diffs(os.path.join(images_dir, common_commit),
+                   os.path.join(images_dir, head_commit_id),
+                   files_changed_head, by_content=True)
+
+    files_changed_head = [os.path.relpath(item, head_image_dir) for item in files_changed_head]
+    files_changed_branch = [os.path.relpath(item, branch_image_dir) for item in files_changed_branch]
+    branches_common_files: Set[str] = set(files_changed_head) & set(files_changed_branch)
+    total_files: Set[str] = set(files_changed_head) | set(files_changed_branch)
+
     print("Changed/added files merged to a new commit:")
-    for item in files_changed:
-        rel_dst = os.path.relpath(item, src_image_dir)
-        print(rel_dst)
-        copy2(item, os.path.join(staging_dir, rel_dst))
-    new_commit_id = commit(f"Merge of {head_commits[0]} and {src_commit_id}", second_parent=src_commit_id)
+    for item in total_files:
+        dst: str = os.path.join(staging_dir, item)
+        if item in branches_common_files:
+            common_file: str = os.path.join(images_dir, common_commit, item)
+            branch_file: str = os.path.join(branch_image_dir, item)
+            head_file: str = os.path.join(head_image_dir, item)
+            print(f"\t{item} was edited on both branches. Merging changes.")
+            try:
+                merge_common_changes(common_file, branch_file, head_file, dst)
+            except ValueError as e:
+                print(e)
+                write_to_log(e)
+                return
+        else:
+            branch_file_path: str = os.path.join(branch_image_dir, item)
+            head_file_path: str = os.path.join(head_image_dir, item)
+            if os.path.isfile(branch_file_path):
+                print(f"\t{branch_file_path}")
+                copy2(branch_file_path, dst)
+            else:
+                print(f"\t{head_file_path}")
+                copy2(head_file_path, dst)
+                
+    new_commit_id: Optional[str] = commit(f"Merge of {head_commits[0]} and {branch_commit_id}", second_parent=branch_commit_id)
     if new_commit_id is None:
         return
     else:
-        activated_branch = get_activated_branch(home_dir)
+        activated_branch: str = get_activated_branch(home_dir)
         update_references(references_path, commit_id=new_commit_id, branch=activated_branch)
 
 
