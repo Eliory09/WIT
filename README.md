@@ -30,8 +30,3 @@ $ python3 <path/to/wit.py> <command> <args>
 
 ### Contributors
 Thanks to Yam Mesika for guiding me through the coding process.
-
-
-
-
-**SUPPORT FREE SOFTWARE**
